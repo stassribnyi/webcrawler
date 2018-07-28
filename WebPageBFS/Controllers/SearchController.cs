@@ -1,27 +1,57 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+
+using WebPageBFS.Interfaces;
+using WebPageBFS.Models;
 
 namespace WebPageBFS.Controllers
 {
+    /// <summary>
+    /// Class encapsulating search controller
+    /// </summary>
+    /// <seealso cref="Microsoft.AspNetCore.Mvc.Controller" />
     [Route("api/[controller]")]
     public class SearchController : Controller
     {
-        // GET api/search/start/https%3A%2F%2Fexample.com%2Fpath%2Fto%2Froot
-        [HttpGet("start/{rootUrl}")]
-        public string Start(string rootUrl)
+        /// <summary>
+        /// The search service
+        /// </summary>
+        private readonly ISearchService _searchService;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SearchController"/> class.
+        /// </summary>
+        /// <param name="searchService">The search service.</param>
+        public SearchController(ISearchService searchService)
         {
-            return "SessionID";
+            _searchService = searchService;
         }
 
-        // POST api/search/pause/SessionID
-        [HttpPost("pause/{sessionId}")]
-        public void Pause(string sessionId)
+        // GET api/search/status/SessionID
+        [HttpGet("status/{sessionId}")]
+        public IEnumerable<SearchResult> Status(string sessionId)
         {
+          return  _searchService.GetStatus(sessionId);
         }
 
+        // GET api/search/start
+        //{
+        //  "rootUrl": "https://nih.gov/sem/mauris/laoreet/ut/12345",
+        //  "maxThread": 1,
+        //  "maxUrls": 1,
+        //  "phrase": "Vestibulum quam sapien, varius ut, blandit non, interdum in, ante."
+        //}
+        [HttpPost("start")]
+        public string Start([FromBody] SearchParams searchParams)
+        {
+            return _searchService.Start(searchParams);
+        }
+        
         // DELETE api/search/stop/SessionID
         [HttpDelete("stop/{sessionId}")]
         public void Stop(string sessionId)
         {
+            _searchService.Stop(sessionId);
         }
     }
 }

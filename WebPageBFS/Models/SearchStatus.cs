@@ -9,6 +9,7 @@
         Found,
         Loading,
         NotFound,
+        Paused,
         Pending
     }
 }
