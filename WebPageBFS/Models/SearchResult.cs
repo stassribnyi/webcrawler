@@ -1,4 +1,6 @@
-﻿namespace WebPageBFS.Models
+﻿using System.Collections.Generic;
+
+namespace WebPageBFS.Models
 {
     /// <summary>
     /// Class describing search result
@@ -19,5 +21,10 @@
         /// Gets or sets the details.
         /// </summary>
         public string Details { get; set; }
+
+        /// <summary>
+        /// Gets or sets the urls.
+        /// </summary>
+        public ICollection<string> Urls { get; set; }
     }
 }
