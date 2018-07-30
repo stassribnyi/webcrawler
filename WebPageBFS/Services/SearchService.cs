@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -87,7 +88,7 @@ namespace WebPageBFS.Services
                 },
                 ParallelService = new ManualParallel
                 (
-                    new List<Action> { () => LoadPage(searchParams.RootUrl) },
+                    new List<Action> { () => AnalyzePage(sessionId, searchParams) },
                     new ParallelOptions { MaxDegreeOfParallelism = searchParams.MaxThread }
                 )
             });
@@ -120,24 +121,62 @@ namespace WebPageBFS.Services
         }
 
         /// <summary>
-        /// Loads the page.
+        /// Analyzes the page.
         /// </summary>
-        /// <param name="url">The URL.</param>
-        private void LoadPage(string url)
+        /// <param name="sessionId">The session identifier.</param>
+        /// <param name="searchParams">The search parameters.</param>
+        /// <returns>The awaiter.</returns>
+        private async Task AnalyzePage(string sessionId, SearchParams searchParams)
         {
-            var result = "";
             try
             {
-                // load page
-                // analyze
-                // if exists external links 
-                // check if some already have been processed
-                // run LoadPage for each 
+                var phrase = searchParams.Phrase;
+                var root = await Search(searchParams.RootUrl, phrase);
 
+                var traverseOrder = new ConcurrentQueue<SearchResult>();
+                var queue = new ConcurrentQueue<SearchResult>();
+                var saved = new ConcurrentDictionary<SearchResult, byte>();
+
+                queue.Enqueue(root);
+                saved.TryAdd(root, 0);
+
+                while (queue.Count > 0)
+                {
+                    queue.TryDequeue(out SearchResult page);
+                    if (page == null)
+                    {
+                        continue;
+                    }
+
+                    traverseOrder.Enqueue(page);
+
+                    var actions = page.Urls.Select((nestedUrl) => new Action(() =>
+                    {
+                        if (!saved.Any(x => x.Key.Url == nestedUrl) && saved.Count < searchParams.MaxUrls)
+                        {
+                            var res = Search(nestedUrl, phrase).Result;
+                            queue.Enqueue(res);
+                            saved.TryAdd(res, 0);
+                        }
+                    })).ToList();
+
+                    _sessions[sessionId].ParallelService = new ManualParallel(actions,
+                        new ParallelOptions { MaxDegreeOfParallelism = searchParams.MaxThread });
+
+                    _sessions[sessionId].ParallelService.Start().Wait();
+                }
+
+                while (traverseOrder.Count > 0)
+                {
+                    traverseOrder.TryDequeue(out SearchResult r);
+                    if (r != null)
+                    {
+                        _sessions[sessionId].CurrentStatus.Add(r);
+                    }
+                }
             }
             catch (Exception ex)
             {
-                result = ex.ToString();
             }
         }
 
@@ -200,7 +239,7 @@ namespace WebPageBFS.Services
     #region nested
     class SearchSession
     {
-        public IEnumerable<SearchResult> CurrentStatus { get; set; }
+        public ICollection<SearchResult> CurrentStatus { get; set; }
 
         public IManualParallel ParallelService { get; set; }
     }
