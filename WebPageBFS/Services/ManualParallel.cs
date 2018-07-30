@@ -8,12 +8,26 @@ using WebPageBFS.Models;
 
 namespace WebPageBFS.Services
 {
+    /// <summary>
+    /// Class encapsulating implementation of manual parallel service.
+    /// </summary>
+    /// <seealso cref="WebPageBFS.Interfaces.IManualParallel" />
     public class ManualParallel : IManualParallel
     {
+        /// <summary>
+        /// The lowest break index lock
+        /// </summary>
+        private readonly object _lowestBreakIndexLock = new object();
+
         /// <summary>
         /// The lowest break index
         /// </summary>
         private long? _lowestBreakIndex = null;
+
+        /// <summary>
+        /// The state lock
+        /// </summary>
+        private readonly object _stateLock = new object();
 
         /// <summary>
         /// The state
@@ -31,9 +45,46 @@ namespace WebPageBFS.Services
         private readonly ParallelOptions _options;
 
         /// <summary>
+        /// Gets the index of the lowest break.
+        /// </summary>
+        public long? LowestBreakIndex
+        {
+            get
+            {
+                lock (_lowestBreakIndexLock)
+                {
+                    return _lowestBreakIndex;
+                }
+            }
+            private set
+            {
+                lock (_lowestBreakIndexLock)
+                {
+                    _lowestBreakIndex = value;
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets the state.
         /// </summary>
-        public ManualParallelState State { get { return _state; } }
+        public ManualParallelState State
+        {
+            get
+            {
+                lock (_stateLock)
+                {
+                    return _state;
+                }
+            }
+            private set
+            {
+                lock (_stateLock)
+                {
+                    _state = value;
+                }
+            }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ManualParallel"/> class.
@@ -55,20 +106,20 @@ namespace WebPageBFS.Services
         }
 
         /// <summary>
-        /// Starts or resumes this instance.
+        /// Starts this instance.
         /// </summary>
-        public async void Start()
+        public async Task Start()
         {
             await Task.Run(() =>
             {
                 _state = ManualParallelState.Processing;
-                var itemsToProcess = _actions.Skip((int)(_lowestBreakIndex ?? 0));
+                var itemsToProcess = _actions.Skip((int)(LowestBreakIndex ?? 0));
 
                 ParallelLoopResult result = Parallel.ForEach(itemsToProcess, _options, ActionWrapper);
 
-                _lowestBreakIndex = result.LowestBreakIteration;
+                LowestBreakIndex = result.LowestBreakIteration;
 
-                _state = _lowestBreakIndex == null
+                _state = LowestBreakIndex == null
                     ? ManualParallelState.None
                     : _state;
             });
