@@ -21,6 +21,7 @@ namespace WebPageBFS
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
+            services.AddSingleton<IPageAnalyzeService, PageAnalyzeService>();
             services.AddSingleton<ISearchService, SearchService>();
         }
 
