@@ -22,14 +22,14 @@ namespace WebPageBFS.Services
         /// <summary>
         /// The sessions
         /// </summary>
-        private readonly Dictionary<string, SearchSession> _sessions;
+        private readonly ConcurrentDictionary<string, SearchSession> _sessions;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SearchService"/> class.
         /// </summary>
         public SearchService()
         {
-            _sessions = new Dictionary<string, SearchSession>();
+            _sessions = new ConcurrentDictionary<string, SearchSession>();
         }
 
         /// <summary>
@@ -42,12 +42,12 @@ namespace WebPageBFS.Services
         /// <exception cref="System.NotImplementedException"></exception>
         public IEnumerable<SearchResult> GetStatus(string sessionId)
         {
-            if (!_sessions.ContainsKey(sessionId))
+            if (!_sessions.TryGetValue(sessionId, out SearchSession result))
             {
                 return Array.Empty<SearchResult>();
             }
 
-            return _sessions[sessionId].CurrentStatus;
+            return result.CurrentStatus;
         }
 
         /// <summary>
@@ -56,12 +56,12 @@ namespace WebPageBFS.Services
         /// <param name="sessionId">The session identifier.</param>
         public void Pause(string sessionId)
         {
-            if (!_sessions.ContainsKey(sessionId))
+            if (!_sessions.TryGetValue(sessionId, out SearchSession result))
             {
                 return;
             }
 
-            _sessions[sessionId].ParallelService.Pause();
+            result.ParallelService.Pause();
         }
 
         /// <summary>
@@ -75,7 +75,13 @@ namespace WebPageBFS.Services
         {
             var sessionId = GenerateSessionId();
 
-            _sessions.Add(sessionId, new SearchSession
+            var manualParralel = new ManualParallel
+                (
+                    new List<Action> { () => AnalyzePage(sessionId, searchParams).Wait() },
+                    new ParallelOptions { MaxDegreeOfParallelism = searchParams.MaxThread }
+                );
+
+            _sessions.TryAdd(sessionId, new SearchSession
             {
                 CurrentStatus = new List<SearchResult>
                 {
@@ -86,12 +92,10 @@ namespace WebPageBFS.Services
                         Details = SearchStatus.Pending.ToString()
                     }
                 },
-                ParallelService = new ManualParallel
-                (
-                    new List<Action> { () => AnalyzePage(sessionId, searchParams) },
-                    new ParallelOptions { MaxDegreeOfParallelism = searchParams.MaxThread }
-                )
+                ParallelService = manualParralel
             });
+
+            manualParralel.Start();
 
             return sessionId;
         }
@@ -102,13 +106,12 @@ namespace WebPageBFS.Services
         /// <param name="sessionId">The session identifier.</param>
         public void Stop(string sessionId)
         {
-            if (!_sessions.ContainsKey(sessionId))
+            if (!_sessions.TryGetValue(sessionId, out SearchSession result))
             {
                 return;
             }
 
-            _sessions[sessionId].ParallelService.Stop();
-            _sessions.Remove(sessionId);
+            result.ParallelService.Stop();
         }
 
         /// <summary>
@@ -133,7 +136,6 @@ namespace WebPageBFS.Services
                 var phrase = searchParams.Phrase;
                 var root = await Search(searchParams.RootUrl, phrase);
 
-                var traverseOrder = new ConcurrentQueue<SearchResult>();
                 var queue = new ConcurrentQueue<SearchResult>();
                 var saved = new ConcurrentDictionary<SearchResult, byte>();
 
@@ -142,37 +144,48 @@ namespace WebPageBFS.Services
 
                 while (queue.Count > 0)
                 {
-                    queue.TryDequeue(out SearchResult page);
-                    if (page == null)
+                    if (!queue.TryDequeue(out SearchResult page) || !_sessions.TryGetValue(sessionId, out SearchSession session))
                     {
                         continue;
                     }
 
-                    traverseOrder.Enqueue(page);
+                    var pageToUpdate = session.CurrentStatus.FirstOrDefault(x => x.Url.Equals(page.Url));
 
-                    var actions = page.Urls.Select((nestedUrl) => new Action(() =>
+                    pageToUpdate.Urls = page.Urls;
+                    pageToUpdate.Status = page.Status;
+                    pageToUpdate.Details = page.Details;
+
+                    var urlsToProceed = page.Urls.Where(nestedUrl => !saved.Any(x => x.Key.Url == nestedUrl)).ToArray();
+
+                    var actions = urlsToProceed.Select((nestedUrl) => new Action(() =>
                     {
-                        if (!saved.Any(x => x.Key.Url == nestedUrl) && saved.Count < searchParams.MaxUrls)
+                        if (saved.Count < searchParams.MaxUrls)
                         {
+                            session.CurrentStatus.Add(
+                             new SearchResult
+                             {
+                                 Url = nestedUrl,
+                                 Status = SearchStatus.Pending,
+                                 Details = SearchStatus.Pending.ToString()
+                             });
+
                             var res = Search(nestedUrl, phrase).Result;
+
                             queue.Enqueue(res);
                             saved.TryAdd(res, 0);
                         }
+
                     })).ToList();
 
-                    _sessions[sessionId].ParallelService = new ManualParallel(actions,
+                    if (!actions.Any())
+                    {
+                        continue;
+                    }
+
+                    session.ParallelService = new ManualParallel(actions,
                         new ParallelOptions { MaxDegreeOfParallelism = searchParams.MaxThread });
 
-                    _sessions[sessionId].ParallelService.Start().Wait();
-                }
-
-                while (traverseOrder.Count > 0)
-                {
-                    traverseOrder.TryDequeue(out SearchResult r);
-                    if (r != null)
-                    {
-                        _sessions[sessionId].CurrentStatus.Add(r);
-                    }
+                    session.ParallelService.Start().Wait();
                 }
             }
             catch (Exception ex)
