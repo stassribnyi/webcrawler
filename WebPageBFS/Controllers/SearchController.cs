@@ -34,6 +34,20 @@ namespace WebPageBFS.Controllers
           return  _searchService.GetStatus(sessionId);
         }
 
+        // POST api/search/pause/SessionID
+        [HttpPost("pause/{sessionId}")]
+        public void Pause(string sessionId)
+        {
+            _searchService.Pause(sessionId);
+        }
+
+        // POST api/search/resume/SessionID
+        [HttpPost("resume/{sessionId}")]
+        public void Resume(string sessionId)
+        {
+            _searchService.Resume(sessionId);
+        }
+
         // GET api/search/start
         //{
         //  "rootUrl": "https://nih.gov/sem/mauris/laoreet/ut/12345",
@@ -47,8 +61,8 @@ namespace WebPageBFS.Controllers
             return _searchService.Start(searchParams);
         }
         
-        // DELETE api/search/stop/SessionID
-        [HttpDelete("stop/{sessionId}")]
+        // POST api/search/stop/SessionID
+        [HttpPost("stop/{sessionId}")]
         public void Stop(string sessionId)
         {
             _searchService.Stop(sessionId);

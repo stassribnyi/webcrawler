@@ -67,6 +67,20 @@ namespace WebPageBFS.Services
         }
 
         /// <summary>
+        /// Resumes the specified session identifier.
+        /// </summary>
+        /// <param name="sessionId">The session identifier.</param>
+        public void Resume(string sessionId)
+        {
+            if (!_sessions.TryGetValue(sessionId, out SearchSession result))
+            {
+                return;
+            }
+
+            result.ParallelService.Start();
+        }
+
+        /// <summary>
         /// Starts the specified search parameters.
         /// </summary>
         /// <param name="searchParams">The search parameters.</param>
@@ -80,7 +94,7 @@ namespace WebPageBFS.Services
             var manualParralel = new ManualParallel
                 (
                     new List<Action> { () => AnalyzePage(sessionId, searchParams).Wait() },
-                    new ParallelOptions { MaxDegreeOfParallelism = searchParams.MaxThread }
+                    new ParallelOptions { MaxDegreeOfParallelism = searchParams.MaxThreads }
                 );
 
             _sessions.TryAdd(sessionId, new SearchSession
@@ -185,7 +199,7 @@ namespace WebPageBFS.Services
                     }
 
                     session.ParallelService = new ManualParallel(actions,
-                        new ParallelOptions { MaxDegreeOfParallelism = searchParams.MaxThread });
+                        new ParallelOptions { MaxDegreeOfParallelism = searchParams.MaxThreads });
 
                     session.ParallelService.Start().Wait();
                 }

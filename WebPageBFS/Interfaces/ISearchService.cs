@@ -24,6 +24,12 @@ namespace WebPageBFS.Interfaces
         void Pause(string sessionId);
 
         /// <summary>
+        /// Resumes the specified session identifier.
+        /// </summary>
+        /// <param name="sessionId">The session identifier.</param>
+        void Resume(string sessionId);
+
+        /// <summary>
         /// Starts the specified search parameters.
         /// </summary>
         /// <param name="searchParams">The search parameters.</param>

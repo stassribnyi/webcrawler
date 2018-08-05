@@ -1,0 +1,4 @@
+export default {
+    FETCH_RESULTS: 'FETCH_RESULTS',
+    SET_SESSION: 'SET_SESSION'
+}

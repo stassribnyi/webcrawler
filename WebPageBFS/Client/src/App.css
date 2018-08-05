@@ -1,3 +1,7 @@
 .App {
   text-align: center;
 }
+
+.card-body .bt-none{
+  border-top: none;
+}

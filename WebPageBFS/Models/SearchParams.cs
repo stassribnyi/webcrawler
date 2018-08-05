@@ -6,9 +6,9 @@
     public class SearchParams
     {
         /// <summary>
-        /// Gets or sets the maximum thread.
+        /// Gets or sets the maximum threads.
         /// </summary>
-        public int MaxThread { get; set; }
+        public int MaxThreads { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum urls.
