@@ -17,7 +17,7 @@ class SearchStore extends EventEmmiter {
     createOrUpdate(searchResult) {
         const index = this.searchResults.findIndex(x => x.url === searchResult.url);
 
-        if (index > 0) {
+        if (index > -1) {
             this.searchResults.splice(index, 1, searchResult);
         }
         else {
@@ -65,8 +65,6 @@ class SearchStore extends EventEmmiter {
         return this.status;
     }
     set searchStatus(value) {
-        console.log(value);
-        
         if (this.status === value) {
             return;
         }

@@ -74,7 +74,7 @@ export default class SearchResults extends Component {
                 </tr>
                 {d.url === this.state.selectedUrl
                     ? (<tr>
-                        <td colspan="3">
+                        <td colSpan="3">
                             <div>{d.details}</div>
                         </td>
                     </tr>)

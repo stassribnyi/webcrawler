@@ -58,7 +58,7 @@ class App extends Component {
         super(props);
 
         this.state = {
-            searchState: SearchStore.searchStatus,
+            searchStatus: SearchStore.searchStatus,
             searchResults: SearchStore.getAll()
         }
 
@@ -85,7 +85,7 @@ class App extends Component {
     }
 
     handleStart(params) {
-        if(this.state.searchState === SearchStateConstants.PAUSED) {
+        if(this.state.searchStatus === SearchStateConstants.PAUSED) {
             SearchActions.resume(this.state.sessionId);
         }
         else {
@@ -94,7 +94,7 @@ class App extends Component {
     }
 
     handleStop() {
-        SearchActions.pause(this.state.sessionId);
+        SearchActions.stop(this.state.sessionId);
     }
 
     render() {

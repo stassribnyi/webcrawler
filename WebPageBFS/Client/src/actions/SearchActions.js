@@ -5,11 +5,11 @@ import SearchConstants from '../constants/SearchConstants';
 import SearchStateConstants from '../constants/SearchStateConstants';
 
 export function pause(sessionId) {
-    SearchApi.pause(sessionId).then(() => setStatus(SearchStateConstants.STOPED))
+    SearchApi.pause(sessionId).then(() => setStatus(SearchStateConstants.PAUSED))
 }
 
 export function resume(sessionId) {
-    SearchApi.resume(sessionId).then(() => setStatus(SearchStateConstants.STOPED))
+    SearchApi.resume(sessionId).then(() => setStatus(SearchStateConstants.STARTED))
 }
 
 export function start(params) {

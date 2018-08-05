@@ -30,7 +30,7 @@ namespace WebPageBFS.Services
             .WithUrl($"{baseUrl}/searchinformer")
             .Build();
 
-            _connection.Closed += (ex) => _connection.StartAsync();
+            _connection.Closed += Reconnent;
         }
 
         /// <summary>
@@ -74,7 +74,19 @@ namespace WebPageBFS.Services
         /// </summary>
         public async void Dispose()
         {
+            _connection.Closed -= Reconnent;
+
             await _connection.DisposeAsync();
+        }
+        
+        /// <summary>
+        /// Reconnents the specified exception.
+        /// </summary>
+        /// <param name="exception">The exception.</param>
+        /// <returns>The awaiter.</returns>
+        private async Task Reconnent(Exception exception)
+        {
+            await _connection.StartAsync();
         }
 
         /// <summary>
