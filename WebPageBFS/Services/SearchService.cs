@@ -265,9 +265,41 @@ namespace WebPageBFS.Services
     #region nested
     class SearchSession
     {
-        public ConcurrentDictionary<string, SearchResult> CurrentStatus { get; set; }
+        /// <summary>
+        /// The parallel service lock
+        /// </summary>
+        private readonly object _parallelServiceLock = new object();
 
-        public IManualParallel ParallelService { get; set; }
+        /// <summary>
+        /// The parallel service
+        /// </summary>
+        private IManualParallel _parallelService;
+
+        /// <summary>
+        /// Gets the parallel service.
+        /// </summary>
+        public IManualParallel ParallelService
+        {
+            get
+            {
+                lock (_parallelServiceLock)
+                {
+                    return _parallelService;
+                }
+            }
+            set
+            {
+                lock (_parallelServiceLock)
+                {
+                    _parallelService = value;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the current status.
+        /// </summary>
+        public ConcurrentDictionary<string, SearchResult> CurrentStatus { get; set; }
     }
     #endregion
 }

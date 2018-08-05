@@ -15,6 +15,6 @@
 }
 
 .scroll-result {
-  height: calc(100vh - 150px);
+  height: calc(100vh - 155px);
   overflow: auto;
 }
