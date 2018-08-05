@@ -85,16 +85,17 @@ export default class SearchForm extends Component {
     }
 
     render() {
+        const startValue = this.props.searchState === SearchStateConstants.PAUSED ? 'Resume' : 'Start';
         const startPauseBtn = this.props.searchState === SearchStateConstants.STARTED
             ? <input type="submit" className="btn btn-warning" onClick={this.handlePause} value="Pause" />
-            : <input type="submit" className="btn btn-primary" onClick={this.handleStart} value="Start" />
+            : <input type="submit" className="btn btn-primary" onClick={this.handleStart} value={startValue} />
 
         const isStopDisabled = this.props.searchState === SearchStateConstants.STOPED;
 
         return (
             <form onSubmit={this.handleSubmit}>
                 <div className="form-group">
-                    <label for="rootUrl">Root url</label>
+                    <label  htmlFor="rootUrl">Root url</label>
                     <input id="rootUrl"
                         name="rootUrl"
                         type="url"
@@ -106,7 +107,7 @@ export default class SearchForm extends Component {
                     <small id="rootUrlHelper" className="form-text text-muted">This url will be used as root for search.</small>
                 </div>
                 <div className="form-group">
-                    <label for="phrase">Search phrase</label>
+                    <label  htmlFor="phrase">Search phrase</label>
                     <input id="phrase"
                         name="phrase"
                         type="text"
@@ -118,7 +119,7 @@ export default class SearchForm extends Component {
                     <small id="phraseHelper" className="form-text text-muted">This phrase will be used as main text to search for.</small>
                 </div>
                 <div className="form-group">
-                    <label for="maxUrls">Max urls</label>
+                    <label  htmlFor="maxUrls">Max urls</label>
                     <input id="maxUrls"
                         name="maxUrls"
                         type="number"
@@ -133,7 +134,7 @@ export default class SearchForm extends Component {
                     <small id="maxUrlsHelper" className="form-text text-muted">Value to be used to reduce or increase amount of additional urls to be analyzed for phrase.</small>
                 </div>
                 <div className="form-group">
-                    <label for="maxThreads">Max threads</label>
+                    <label  htmlFor="maxThreads">Max threads</label>
                     <input id="maxThreads"
                         name="maxThreads"
                         type="number"

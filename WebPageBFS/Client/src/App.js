@@ -26,7 +26,7 @@ function startConnection() {
         });
 
     connection.on('Changed', (sessionId) => {
-        if (SearchStore.getSessionId() === sessionId) {
+        if (SearchStore.sessionId === sessionId) {
             SearchActions.getStatus(sessionId);
         }
     });
@@ -56,7 +56,7 @@ class App extends Component {
             searchResults: SearchStore.getAll()
         }
 
-        this.getSearchResults = this.updateState.bind(this);
+        this.updateState = this.updateState.bind(this);
         this.handlePause = this.handlePause.bind(this);
         this.handleStart = this.handleStart.bind(this);
         this.handleStop = this.handleStop.bind(this);
@@ -80,7 +80,7 @@ class App extends Component {
     }
 
     handleStart(params) {
-        if(this.searchState === SearchStateConstants.PAUSED) {
+        if(this.state.searchState === SearchStateConstants.PAUSED) {
             SearchActions.resume(this.state.sessionId);
         }
         else {
@@ -105,11 +105,11 @@ class App extends Component {
                 </div>
                 <div className="row mt-3">
                     <div className="col-12 col-sm-12 col-md-4 col-lg-4 col-xl-4 mb-3">
-                        <div class="card">
-                            <div class="card-header">
+                        <div className="card">
+                            <div className="card-header">
                                 Search form
                              </div>
-                            <div class="card-body">
+                            <div className="card-body">
                                 <SearchForm searchState={this.state.searchState}
                                     onPause={this.handlePause}
                                     onStart={this.handleStart}
@@ -119,11 +119,11 @@ class App extends Component {
                         </div>
                     </div>
                     <div className="col-12 col-sm-12 col-md-8 col-lg-8 col-xl-8 mb-3">
-                        <div class="card">
-                            <div class="card-header">
+                        <div className="card">
+                            <div className="card-header">
                                 Search results
                              </div>
-                            <div class="card-body p-0">
+                            <div className="card-body p-0">
                                 {
                                     this.state.searchResults && this.state.searchResults.length
                                         ? (<SearchResults data={this.state.searchResults} />)
@@ -139,7 +139,7 @@ class App extends Component {
 
     updateState() {
         this.setState({
-            searchResults: SearchStore.getSearchResults(),
+            searchResults: SearchStore.getAll(),
             sessionId: SearchStore.sessionId
         });
     }

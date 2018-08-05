@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.SignalR;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,16 +22,32 @@ namespace WebPageBFS.Services
         private readonly IPageAnalyzeService _pageAnalyzeService;
 
         /// <summary>
+        /// The search informer hub client
+        /// </summary>
+        private readonly ISearchInformerHubClient _searchInformerHubClient;
+
+
+        /// <summary>
         /// The sessions
         /// </summary>
         private readonly ConcurrentDictionary<string, SearchSession> _sessions;
 
         /// <summary>
+        /// Occurs when [add or update].
+        /// </summary>
+        public event EventHandler<SearchEventArgs> AddOrUpdate;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="SearchService"/> class.
         /// </summary>
-        public SearchService(IPageAnalyzeService pageAnalyzeService)
+        /// <param name="pageAnalyzeService">The page analyze service.</param>
+        /// <param name="searchInformerHubClient">The search informer hub client.</param>
+        public SearchService(
+            IPageAnalyzeService pageAnalyzeService,
+            ISearchInformerHubClient searchInformerHubClient)
         {
             _pageAnalyzeService = pageAnalyzeService;
+            _searchInformerHubClient = searchInformerHubClient;
             _sessions = new ConcurrentDictionary<string, SearchSession>();
         }
 
@@ -49,7 +66,7 @@ namespace WebPageBFS.Services
                 return Array.Empty<SearchResult>();
             }
 
-            return result.CurrentStatus;
+            return result.CurrentStatus.Select(x => x.Value).ToArray();
         }
 
         /// <summary>
@@ -99,15 +116,7 @@ namespace WebPageBFS.Services
 
             _sessions.TryAdd(sessionId, new SearchSession
             {
-                CurrentStatus = new List<SearchResult>
-                {
-                    new SearchResult
-                    {
-                        Url = searchParams.RootUrl,
-                        Status = SearchStatus.Pending,
-                        Details = SearchStatus.Pending.ToString()
-                    }
-                },
+                CurrentStatus = new ConcurrentDictionary<string, SearchResult>(),
                 ParallelService = manualParralel
             });
 
@@ -149,46 +158,50 @@ namespace WebPageBFS.Services
         {
             try
             {
+                await _searchInformerHubClient.Start();
+
+                var rootUrl = searchParams.RootUrl;
                 var phrase = searchParams.Phrase;
-                var root = await _pageAnalyzeService.Analyze(searchParams.RootUrl, phrase);
+
+                TryAddOrUpdate(sessionId, new SearchResult
+                {
+                    Url = rootUrl,
+                    Status = SearchStatus.Pending,
+                    Details = SearchStatus.Pending.ToString()
+                });
+
+                var root = await _pageAnalyzeService.Analyze(rootUrl, phrase);
 
                 var queue = new ConcurrentQueue<SearchResult>();
-                var saved = new ConcurrentDictionary<SearchResult, byte>();
+                var saved = new ConcurrentDictionary<string, SearchResult>();
 
                 queue.Enqueue(root);
-                saved.TryAdd(root, 0);
+                saved.TryAdd(root.Url, root);
 
                 while (queue.Count > 0)
                 {
-                    if (!queue.TryDequeue(out SearchResult page) || !_sessions.TryGetValue(sessionId, out SearchSession session))
+                    if (!queue.TryDequeue(out SearchResult page) || !TryAddOrUpdate(sessionId, page))
                     {
                         continue;
                     }
 
-                    var pageToUpdate = session.CurrentStatus.FirstOrDefault(x => x.Url.Equals(page.Url));
-
-                    pageToUpdate.Urls = page.Urls;
-                    pageToUpdate.Status = page.Status;
-                    pageToUpdate.Details = page.Details;
-
-                    var urlsToProceed = page.Urls.Where(nestedUrl => !saved.Any(x => x.Key.Url == nestedUrl)).ToArray();
+                    var urlsToProceed = page.Urls.Where(nestedUrl => !saved.Any(x => x.Key == nestedUrl)).ToArray();
 
                     var actions = urlsToProceed.Select((nestedUrl) => new Action(() =>
                     {
-                        if (saved.Count < searchParams.MaxUrls)
+                        var pageToAdd = new SearchResult
                         {
-                            session.CurrentStatus.Add(
-                             new SearchResult
-                             {
-                                 Url = nestedUrl,
-                                 Status = SearchStatus.Pending,
-                                 Details = SearchStatus.Pending.ToString()
-                             });
+                            Url = nestedUrl,
+                            Status = SearchStatus.Pending,
+                            Details = SearchStatus.Pending.ToString()
+                        };
 
-                            var res = _pageAnalyzeService.Analyze(nestedUrl, phrase).Result;
+                        if (saved.Count < searchParams.MaxUrls && TryAddOrUpdate(sessionId, pageToAdd))
+                        {
+                            var nestedPage = _pageAnalyzeService.Analyze(nestedUrl, phrase).Result;
 
-                            queue.Enqueue(res);
-                            saved.TryAdd(res, 0);
+                            queue.Enqueue(nestedPage);
+                            saved.TryAdd(nestedPage.Url, nestedPage);
                         }
 
                     })).ToList();
@@ -197,6 +210,8 @@ namespace WebPageBFS.Services
                     {
                         continue;
                     }
+
+                    var session = _sessions[sessionId];
 
                     session.ParallelService = new ManualParallel(actions,
                         new ParallelOptions { MaxDegreeOfParallelism = searchParams.MaxThreads });
@@ -209,13 +224,47 @@ namespace WebPageBFS.Services
                 // TODO implement general error handling
                 throw ex;
             }
+            finally
+            {
+                await _searchInformerHubClient.Stop();
+            }
+        }
+
+        /// <summary>
+        /// Tries the add or update.
+        /// </summary>
+        /// <param name="sessionId">The session identifier.</param>
+        /// <param name="page">The page.</param>
+        /// <returns>The status of attempt.</returns>
+        private bool TryAddOrUpdate(string sessionId, SearchResult page)
+        {
+            if (!_sessions.TryGetValue(sessionId, out SearchSession session))
+            {
+                return false;
+            }
+
+            if (session.CurrentStatus.TryGetValue(page.Url, out SearchResult pageToUpdate))
+            {
+                pageToUpdate.Urls = page.Urls;
+                pageToUpdate.Status = page.Status;
+                pageToUpdate.Details = page.Details;
+            }
+            else if (!session.CurrentStatus.TryAdd(page.Url, page))
+            {
+                return false;
+            }
+
+            AddOrUpdate?.Invoke(this, new SearchEventArgs(sessionId, page));
+            _searchInformerHubClient.Inform("Changed", sessionId, page);
+
+            return true;
         }
     }
 
     #region nested
     class SearchSession
     {
-        public ICollection<SearchResult> CurrentStatus { get; set; }
+        public ConcurrentDictionary<string, SearchResult> CurrentStatus { get; set; }
 
         public IManualParallel ParallelService { get; set; }
     }

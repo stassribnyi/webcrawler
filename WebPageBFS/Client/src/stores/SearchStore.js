@@ -34,9 +34,11 @@ class SearchStore extends EventEmmiter {
         switch (action.type) {
             case SearchConstants.FETCH_RESULTS:
                 this.fetchSearchResults(action.searchResults);
+                this.emitChange();
                 break;
             case SearchConstants.SET_SESSION:
                 this.sessionId = action.sessionId;
+                this.emitChange();
                 break;
             default:
                 break;
@@ -44,7 +46,7 @@ class SearchStore extends EventEmmiter {
     }
 
     get sessionId () {
-        localStorage.getItem(SESSION_KEY);
+       return localStorage.getItem(SESSION_KEY);
     }
     set sessionId (value) {  
         if(this.sessionId === value) {

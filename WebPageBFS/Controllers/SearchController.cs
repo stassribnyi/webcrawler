@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 
 using WebPageBFS.Interfaces;
@@ -10,6 +11,7 @@ namespace WebPageBFS.Controllers
     /// Class encapsulating search controller
     /// </summary>
     /// <seealso cref="Microsoft.AspNetCore.Mvc.Controller" />
+    [EnableCors("CorsPolicy")]
     [Route("api/[controller]")]
     public class SearchController : Controller
     {

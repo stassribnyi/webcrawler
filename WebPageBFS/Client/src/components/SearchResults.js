@@ -9,7 +9,7 @@ function statusToText(status) {
         case 2:
             return 'Loading'
         case 3:
-            return 'NotFound'
+            return 'Not Found'
         case 4:
             return 'Paused'
         case 5:
@@ -42,11 +42,11 @@ export default function SearchResults(props) {
     const trs = props.data.map((d, i) => (
         <tr>
             <td>
-                <span>{i + 1}</span>
-                <span className={`badge badge-pill ${statusToClass(d.status)}`}></span>
+                <span className={`badge badge-pill status-badge ${statusToClass(d.status)}`}>
+                {statusToText(d.status)}
+                </span>
             </td>
             <td>{d.url}</td>
-            <td>{statusToText(d.status)}</td>
             <td>{d.details}</td>
         </tr>
     ));
@@ -54,9 +54,8 @@ export default function SearchResults(props) {
         <table className="table table-striped table-sm">
             <thead>
                 <tr>
-                    <th scope="col" className="bt-none">#</th>
+                    <th scope="col" className="bt-none status-col">Status</th>
                     <th scope="col" className="bt-none">Url</th>
-                    <th scope="col" className="bt-none">Status</th>
                     <th scope="col" className="bt-none">Details</th>
                 </tr>
             </thead>

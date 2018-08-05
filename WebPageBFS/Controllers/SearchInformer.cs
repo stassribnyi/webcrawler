@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 using System.Threading.Tasks;
 
 using WebPageBFS.Interfaces;
+using WebPageBFS.Models;
 
 namespace WebPageBFS.Controllers
 {
@@ -12,30 +13,15 @@ namespace WebPageBFS.Controllers
     public class SearchInformer : Hub
     {
         /// <summary>
-        /// The search service
+        /// Informs the specified action name.
         /// </summary>
-        private readonly ISearchService _searchService;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SearchInformer"/> class.
-        /// </summary>
-        /// <param name="searchService">The search service.</param>
-        public SearchInformer(ISearchService searchService)
-        {
-            _searchService = searchService;
-
-            // subscribe for updates
-            // _searchService.Subscribe((event) => this.Inform(event.sessionId));
-        }
-
-        /// <summary>
-        /// Informs the specified session identifier.
-        /// </summary>
+        /// <param name="actionName">Name of the action.</param>
         /// <param name="sessionId">The session identifier.</param>
+        /// <param name="searchResults">The search results.</param>
         /// <returns>The awaiter.</returns>
-        public Task Inform(string sessionId)
+        public async Task Inform(string actionName, string sessionId, SearchResult searchResults)
         {
-            return Clients.All.SendAsync("Changed", sessionId);
+            await Clients.All.SendAsync(actionName, sessionId, searchResults);
         }
     }
 }

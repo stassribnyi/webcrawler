@@ -3,7 +3,7 @@ import axios from 'axios';
 import config from '../assets/config';
 
 const instance = axios.create({
-    baseURL: config.API_URL
+    baseURL: `${config.API_URL}/api`
 });
 
 class SearchApi {

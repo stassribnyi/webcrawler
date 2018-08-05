@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
 
 using WebPageBFS.Models;
 
@@ -10,6 +10,11 @@ namespace WebPageBFS.Interfaces
     /// </summary>
     public interface ISearchService
     {
+        /// <summary>
+        /// Occurs when [add or update].
+        /// </summary>
+        event EventHandler<SearchEventArgs> AddOrUpdate;
+
         /// <summary>
         /// Gets the status.
         /// </summary>
