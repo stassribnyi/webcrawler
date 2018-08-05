@@ -25,9 +25,15 @@ function startConnection() {
             console.log('Error while establishing connection');
         });
 
-    connection.on('Changed', (sessionId) => {
+    connection.on('Changed', (sessionId, searchResult) => {
         if (SearchStore.sessionId === sessionId) {
-            SearchActions.getStatus(sessionId);
+            SearchActions.createOrUpdate(searchResult);
+        }
+    });
+
+    connection.on('Stoped', (sessionId) => {
+        if (SearchStore.sessionId === sessionId) {
+            SearchActions.setStatus(SearchStateConstants.STOPED);
         }
     });
 
@@ -52,7 +58,7 @@ class App extends Component {
         super(props);
 
         this.state = {
-            searchState: SearchStateConstants.STOPED,
+            searchState: SearchStore.searchStatus,
             searchResults: SearchStore.getAll()
         }
 
@@ -76,7 +82,6 @@ class App extends Component {
 
     handlePause() {
         SearchActions.pause(this.state.sessionId);
-        this.setState({ searchState: SearchStateConstants.PAUSED });
     }
 
     handleStart(params) {
@@ -86,13 +91,10 @@ class App extends Component {
         else {
             SearchActions.start(params);
         }
-
-        this.setState({ searchState: SearchStateConstants.STARTED })
     }
 
     handleStop() {
         SearchActions.pause(this.state.sessionId);
-        this.setState({ searchState: SearchStateConstants.STOPED })
     }
 
     render() {
@@ -104,13 +106,13 @@ class App extends Component {
                     </div>
                 </div>
                 <div className="row mt-3">
-                    <div className="col-12 col-sm-12 col-md-4 col-lg-4 col-xl-4 mb-3">
+                    <div className="col-12 col-sm-12 col-lg-4 col-xl-4 mb-3">
                         <div className="card">
-                            <div className="card-header">
+                            <div className="card-header text-center">
                                 Search form
                              </div>
                             <div className="card-body">
-                                <SearchForm searchState={this.state.searchState}
+                                <SearchForm searchStatus={this.state.searchStatus}
                                     onPause={this.handlePause}
                                     onStart={this.handleStart}
                                     onStop={this.handleStop}
@@ -118,12 +120,12 @@ class App extends Component {
                             </div>
                         </div>
                     </div>
-                    <div className="col-12 col-sm-12 col-md-8 col-lg-8 col-xl-8 mb-3">
+                    <div className="col-12 col-sm-12 col-lg-8 col-xl-8 mb-3">
                         <div className="card">
-                            <div className="card-header">
+                            <div className="card-header text-center">
                                 Search results
                              </div>
-                            <div className="card-body p-0">
+                            <div className="card-body scroll-result p-0">
                                 {
                                     this.state.searchResults && this.state.searchResults.length
                                         ? (<SearchResults data={this.state.searchResults} />)
@@ -140,7 +142,8 @@ class App extends Component {
     updateState() {
         this.setState({
             searchResults: SearchStore.getAll(),
-            sessionId: SearchStore.sessionId
+            sessionId: SearchStore.sessionId,
+            searchStatus: SearchStore.searchStatus
         });
     }
 }

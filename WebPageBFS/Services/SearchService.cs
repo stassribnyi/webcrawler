@@ -226,6 +226,7 @@ namespace WebPageBFS.Services
             }
             finally
             {
+                await _searchInformerHubClient.Inform("Stoped", sessionId);
                 await _searchInformerHubClient.Stop();
             }
         }

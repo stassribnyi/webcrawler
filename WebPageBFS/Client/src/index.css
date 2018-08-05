@@ -12,11 +12,3 @@ table {
 table td {
   word-wrap: break-word;
 }
-
-.status-badge{
-  width: 80px;
-}
-
-.status-col {
-  width: 90px;
-}

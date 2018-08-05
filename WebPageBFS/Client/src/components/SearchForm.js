@@ -85,12 +85,12 @@ export default class SearchForm extends Component {
     }
 
     render() {
-        const startValue = this.props.searchState === SearchStateConstants.PAUSED ? 'Resume' : 'Start';
-        const startPauseBtn = this.props.searchState === SearchStateConstants.STARTED
+        const startValue = this.props.searchStatus === SearchStateConstants.PAUSED ? 'Resume' : 'Start';
+        const startPauseBtn = this.props.searchStatus === SearchStateConstants.STARTED
             ? <input type="submit" className="btn btn-warning" onClick={this.handlePause} value="Pause" />
             : <input type="submit" className="btn btn-primary" onClick={this.handleStart} value={startValue} />
 
-        const isStopDisabled = this.props.searchState === SearchStateConstants.STOPED;
+        const isStopDisabled = this.props.searchStatus === SearchStateConstants.STOPED;
 
         return (
             <form onSubmit={this.handleSubmit}>

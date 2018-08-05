@@ -2,6 +2,7 @@
 import EventEmmiter from 'events';
 import Dispatcher from '../Dispatcher';
 import SearchConstants from '../constants/SearchConstants';
+import SearchStateConstants from '../constants/SearchStateConstants';
 
 const SESSION_KEY = 'search_session';
 
@@ -10,6 +11,20 @@ class SearchStore extends EventEmmiter {
         super();
 
         this.searchResults = [];
+        this.status = SearchStateConstants.STOPED;
+    }
+
+    createOrUpdate(searchResult) {
+        const index = this.searchResults.findIndex(x => x.url === searchResult.url);
+
+        if (index > 0) {
+            this.searchResults.splice(index, 1, searchResult);
+        }
+        else {
+            this.searchResults.push(searchResult);
+        }
+
+        this.emitChange();
     }
 
     emitChange() {
@@ -26,10 +41,6 @@ class SearchStore extends EventEmmiter {
         return this.searchResults;
     }
 
-    getSessionId() {
-        return this.sessionId;
-    }
-
     handleActions(action) {
         switch (action.type) {
             case SearchConstants.FETCH_RESULTS:
@@ -38,21 +49,40 @@ class SearchStore extends EventEmmiter {
                 break;
             case SearchConstants.SET_SESSION:
                 this.sessionId = action.sessionId;
-                this.emitChange();
+                break;
+            case SearchConstants.SET_STATUS:
+                this.searchStatus = action.searchStatus;
+                break;
+            case SearchConstants.CREATE_OR_UPDATE:
+                this.createOrUpdate(action.searchResult);
                 break;
             default:
                 break;
         }
     }
 
-    get sessionId () {
-       return localStorage.getItem(SESSION_KEY);
+    get searchStatus() {
+        return this.status;
     }
-    set sessionId (value) {  
-        if(this.sessionId === value) {
+    set searchStatus(value) {
+        console.log(value);
+        
+        if (this.status === value) {
             return;
         }
-        
+
+        this.status = value;
+        this.emitChange();
+    }
+
+    get sessionId() {
+        return localStorage.getItem(SESSION_KEY);
+    }
+    set sessionId(value) {
+        if (this.sessionId === value) {
+            return;
+        }
+
         localStorage.setItem(SESSION_KEY, value);
 
         this.emitChange();

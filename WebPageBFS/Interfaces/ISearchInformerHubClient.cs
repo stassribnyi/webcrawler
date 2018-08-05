@@ -17,7 +17,7 @@ namespace WebPageBFS.Interfaces
         /// <param name="sessionId">The session identifier.</param>
         /// <param name="searchResults">The search results.</param>
         /// <returns>The awaiter.</returns>
-        Task Inform(string actionName, string sessionId, SearchResult searchResults);
+        Task Inform(string actionName, string sessionId, SearchResult searchResults = null);
 
         /// <summary>
         /// Starts this instance.

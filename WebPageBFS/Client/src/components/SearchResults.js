@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Component } from 'react';
 
 function statusToText(status) {
     switch (status) {
@@ -38,30 +38,60 @@ function statusToClass(status) {
     }
 }
 
-export default function SearchResults(props) {
-    const trs = props.data.map((d, i) => (
-        <tr>
-            <td>
-                <span className={`badge badge-pill status-badge ${statusToClass(d.status)}`}>
-                {statusToText(d.status)}
-                </span>
-            </td>
-            <td>{d.url}</td>
-            <td>{d.details}</td>
-        </tr>
-    ));
-    return (
-        <table className="table table-striped table-sm">
-            <thead>
+export default class SearchResults extends Component {
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            selectedUrl: null
+        };
+    }
+
+    handleShowDetails(url) {
+        this.setState({
+            selectedUrl: this.state.selectedUrl === url
+                ? null
+                : url
+        });
+    }
+
+    render() {
+        const tbodies = this.props.data.map((d) => (
+            <tbody key={d.url}>
                 <tr>
-                    <th scope="col" className="bt-none status-col">Status</th>
-                    <th scope="col" className="bt-none">Url</th>
-                    <th scope="col" className="bt-none">Details</th>
+                    <td className="text-center">
+                        <span className={`badge badge-pill status-badge ${statusToClass(d.status)}`}>
+                            {statusToText(d.status)}
+                        </span>
+                    </td>
+                    <td>
+                        <a href={d.url}>{d.url}</a>
+                    </td>
+                    <td className="text-center"
+                        onClick={() => this.handleShowDetails(d.url)}>
+                        <a href="#">Show details</a>
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                {trs}
+                {d.url === this.state.selectedUrl
+                    ? (<tr>
+                        <td colspan="3">
+                            <div>{d.details}</div>
+                        </td>
+                    </tr>)
+                    : null}
             </tbody>
-        </table>
-    );
+        ));
+        return (
+            <table className="table table-striped table-sm">
+                <thead>
+                    <tr>
+                        <th scope="col" className="text-center bt-none info-col">Status</th>
+                        <th scope="col" className="text-center bt-none">Url</th>
+                        <th scope="col" className="text-center bt-none info-col">Details</th>
+                    </tr>
+                </thead>
+                {tbodies}
+            </table>
+        );
+    }
 }

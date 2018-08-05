@@ -5,3 +5,16 @@
 .card-body .bt-none{
   border-top: none;
 }
+
+.status-badge{
+  width: 80px;
+}
+
+.info-col {
+  width: 110px;
+}
+
+.scroll-result {
+  height: calc(100vh - 150px);
+  overflow: auto;
+}
